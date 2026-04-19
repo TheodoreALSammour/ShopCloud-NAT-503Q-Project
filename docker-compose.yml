@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  auth:
+    build: ./services/auth
+    ports:
+      - "3000:3000"
+
+  catalog:
+    build: ./services/catalog
+    ports:
+      - "3001:3001"
+
+  cart:
+    build: ./services/cart
+    ports:
+      - "3002:3002"
+
+  checkout:
+    build: ./services/checkout
+    ports:
+      - "3003:3003"
+
+  admin:
+    build: ./services/admin
+    ports:
+      - "3004:3004"
+
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: shopcloud
+      POSTGRES_PASSWORD: shopcloud123
+      POSTGRES_DB: shopcloud
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
