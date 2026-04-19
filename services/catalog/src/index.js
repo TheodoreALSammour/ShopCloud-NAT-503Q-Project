@@ -12,30 +12,46 @@ const pool = new Pool({
   port: 5432,
 });
 
-async function initDB() {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS products (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        price INTEGER NOT NULL
-      )
-    `);
+async function wait(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
-    const check = await pool.query("SELECT COUNT(*) FROM products");
-    if (parseInt(check.rows[0].count) === 0) {
+async function initDBWithRetry(retries = 10) {
+  for (let i = 1; i <= retries; i++) {
+    try {
+      console.log(`DB init attempt ${i}...`);
+
       await pool.query(`
-        INSERT INTO products (name, price)
-        VALUES 
-          ('Laptop', 1200),
-          ('Phone', 800),
-          ('Headphones', 150)
+        CREATE TABLE IF NOT EXISTS products (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          price INTEGER NOT NULL
+        )
       `);
-    }
 
-    console.log("Catalog DB ready");
-  } catch (err) {
-    console.error("DB init error:", err.message);
+      const check = await pool.query(`SELECT COUNT(*) FROM products`);
+
+      if (parseInt(check.rows[0].count) === 0) {
+        await pool.query(`
+          INSERT INTO products (name, price)
+          VALUES
+            ('Laptop', 1200),
+            ('Phone', 800),
+            ('Headphones', 150)
+        `);
+      }
+
+      console.log("Catalog DB ready");
+      return;
+    } catch (err) {
+      console.log(`DB not ready yet: ${err.message}`);
+
+      if (i === retries) {
+        throw err;
+      }
+
+      await wait(5000);
+    }
   }
 }
 
@@ -87,8 +103,16 @@ app.post("/products", async (req, res) => {
   }
 });
 
-initDB().then(() => {
-  app.listen(3001, () => {
-    console.log("Catalog running on 3001");
-  });
-});
+async function startServer() {
+  try {
+    await initDBWithRetry();
+    app.listen(3001, () => {
+      console.log("Catalog running on 3001");
+    });
+  } catch (err) {
+    console.error("Failed to initialize DB:", err.message);
+    process.exit(1);
+  }
+}
+
+startServer();
