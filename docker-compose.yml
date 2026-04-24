@@ -1,34 +1,49 @@
 services:
   auth:
-    build: ./services/auth
+    build:
+      context: .
+      dockerfile: services/auth/Dockerfile
     ports:
       - "3000:3000"
+    depends_on:
+      - postgres
 
   catalog:
-    build: ./services/catalog
+    build:
+      context: .
+      dockerfile: services/catalog/Dockerfile
     ports:
       - "3001:3001"
     depends_on:
       - postgres
 
   cart:
-    build: ./services/cart
+    build:
+      context: .
+      dockerfile: services/cart/Dockerfile
     ports:
       - "3002:3002"
     depends_on:
       - redis
 
   checkout:
-    build: ./services/checkout
+    build:
+      context: .
+      dockerfile: services/checkout/Dockerfile
     ports:
       - "3003:3003"
     depends_on:
       - postgres
+      - redis
 
   admin:
-    build: ./services/admin
+    build:
+      context: .
+      dockerfile: services/admin/Dockerfile
     ports:
       - "3004:3004"
+    depends_on:
+      - postgres
 
   postgres:
     image: postgres:15

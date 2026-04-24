@@ -1,59 +1,10 @@
 const express = require("express");
-const { Pool } = require("pg");
+const { createPool, waitForDatabase } = require("../../../shared/db");
 
 const app = express();
 app.use(express.json());
 
-const pool = new Pool({
-  user: "shopcloud",
-  host: "postgres",
-  database: "shopcloud",
-  password: "shopcloud123",
-  port: 5432,
-});
-
-async function wait(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-async function initDBWithRetry(retries = 10) {
-  for (let i = 1; i <= retries; i++) {
-    try {
-      console.log(`DB init attempt ${i}...`);
-
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS products (
-          id SERIAL PRIMARY KEY,
-          name VARCHAR(255) NOT NULL,
-          price INTEGER NOT NULL
-        )
-      `);
-
-      const check = await pool.query(`SELECT COUNT(*) FROM products`);
-
-      if (parseInt(check.rows[0].count) === 0) {
-        await pool.query(`
-          INSERT INTO products (name, price)
-          VALUES
-            ('Laptop', 1200),
-            ('Phone', 800),
-            ('Headphones', 150)
-        `);
-      }
-
-      console.log("Catalog DB ready");
-      return;
-    } catch (err) {
-      console.log(`DB not ready yet: ${err.message}`);
-
-      if (i === retries) {
-        throw err;
-      }
-
-      await wait(5000);
-    }
-  }
-}
+const pool = createPool();
 
 app.get("/health", (req, res) => {
   res.json({ service: "catalog", status: "ok" });
@@ -87,11 +38,15 @@ app.get("/products/:id", async (req, res) => {
 
 app.post("/products", async (req, res) => {
   try {
-    const { name, price } = req.body;
+    const { name, description, price, stock } = req.body;
 
     const result = await pool.query(
-      "INSERT INTO products (name, price) VALUES ($1, $2) RETURNING *",
-      [name, price]
+      `
+        INSERT INTO products (name, description, price, stock)
+        VALUES ($1, $2, $3, $4)
+        RETURNING *
+      `,
+      [name, description || null, price, Number(stock ?? 0)]
     );
 
     res.json({
@@ -105,7 +60,48 @@ app.post("/products", async (req, res) => {
 
 async function startServer() {
   try {
-    await initDBWithRetry();
+    await waitForDatabase(pool, {
+      label: "Catalog DB",
+      onReady: async (db) => {
+        await db.query(`
+          CREATE TABLE IF NOT EXISTS products (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(150) NOT NULL,
+            description TEXT,
+            price NUMERIC(10,2) NOT NULL,
+            stock INT NOT NULL DEFAULT 0
+          )
+        `);
+
+        await db.query(`
+          ALTER TABLE products
+          ADD COLUMN IF NOT EXISTS description TEXT
+        `);
+
+        await db.query(`
+          ALTER TABLE products
+          ADD COLUMN IF NOT EXISTS stock INT NOT NULL DEFAULT 0
+        `);
+
+        await db.query(`
+          ALTER TABLE products
+          ALTER COLUMN price TYPE NUMERIC(10,2)
+          USING price::numeric
+        `);
+
+        const check = await db.query("SELECT COUNT(*) FROM products");
+
+        if (parseInt(check.rows[0].count, 10) === 0) {
+          await db.query(`
+            INSERT INTO products (name, description, price, stock)
+            VALUES
+              ('Laptop', 'High performance laptop', 1200.00, 10),
+              ('Phone', 'Latest smartphone', 800.00, 20),
+              ('Headphones', 'Wireless headphones', 150.00, 30)
+          `);
+        }
+      }
+    });
     app.listen(3001, () => {
       console.log("Catalog running on 3001");
     });

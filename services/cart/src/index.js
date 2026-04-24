@@ -1,47 +1,19 @@
 const express = require("express");
-const { createClient } = require("redis");
+const { authenticate } = require("../../../shared/authMiddleware");
+const { createRedisConnection, waitForRedis } = require("../../../shared/redis");
 
 const app = express();
 app.use(express.json());
 
-const redisClient = createClient({
-  url: "redis://redis:6379"
-});
-
-redisClient.on("error", (err) => {
-  console.error("Redis error:", err.message);
-});
-
-async function wait(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-async function connectRedisWithRetry(retries = 10) {
-  for (let i = 1; i <= retries; i++) {
-    try {
-      console.log(`Redis connection attempt ${i}...`);
-      await redisClient.connect();
-      console.log("Connected to Redis");
-      return;
-    } catch (err) {
-      console.log(`Redis not ready yet: ${err.message}`);
-
-      if (i === retries) {
-        throw err;
-      }
-
-      await wait(3000);
-    }
-  }
-}
+const redisClient = createRedisConnection();
 
 app.get("/health", (req, res) => {
   res.json({ service: "cart", status: "ok" });
 });
 
-app.post("/cart/:userId/add", async (req, res) => {
+app.post("/cart/add", authenticate, async (req, res) => {
   try {
-    const { userId } = req.params;
+    const userId = req.user.id;
     const item = req.body;
 
     const cartKey = `cart:${userId}`;
@@ -62,9 +34,9 @@ app.post("/cart/:userId/add", async (req, res) => {
   }
 });
 
-app.get("/cart/:userId", async (req, res) => {
+app.get("/cart", authenticate, async (req, res) => {
   try {
-    const { userId } = req.params;
+    const userId = req.user.id;
     const cartKey = `cart:${userId}`;
 
     const cart = await redisClient.get(cartKey);
@@ -75,9 +47,9 @@ app.get("/cart/:userId", async (req, res) => {
   }
 });
 
-app.delete("/cart/:userId", async (req, res) => {
+app.delete("/cart", authenticate, async (req, res) => {
   try {
-    const { userId } = req.params;
+    const userId = req.user.id;
     const cartKey = `cart:${userId}`;
 
     await redisClient.del(cartKey);
@@ -90,9 +62,11 @@ app.delete("/cart/:userId", async (req, res) => {
 
 async function startServer() {
   try {
-    await connectRedisWithRetry();
-    app.listen(3002, () => {
-      console.log("Cart running on 3002");
+    await waitForRedis(redisClient, { label: "Cart Redis" });
+
+    const port = Number(process.env.CART_PORT || 3002);
+    app.listen(port, () => {
+      console.log(`Cart running on ${port}`);
     });
   } catch (err) {
     console.error("Failed to connect to Redis:", err.message);
