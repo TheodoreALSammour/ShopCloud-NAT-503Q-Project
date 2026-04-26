@@ -12,16 +12,33 @@ app.get("/health", (req, res) => {
 });
 
 app.post("/cart/add", authenticate, async (req, res) => {
+  const productId = Number(req.body.productId ?? req.body.id);
+  const quantity = Number(req.body.quantity || 1);
+
+  if (!Number.isInteger(productId) || productId <= 0 || !Number.isInteger(quantity) || quantity <= 0) {
+    return res.status(400).json({
+      message: "productId and positive integer quantity are required"
+    });
+  }
+
   try {
     const userId = req.user.id;
-    const item = req.body;
+    const item = { productId, quantity };
 
     const cartKey = `cart:${userId}`;
 
     const existingCart = await redisClient.get(cartKey);
     let cart = existingCart ? JSON.parse(existingCart) : [];
 
-    cart.push(item);
+    const existingItem = cart.find((cartItem) => Number(cartItem.productId ?? cartItem.id) === productId);
+
+    if (existingItem) {
+      existingItem.productId = productId;
+      existingItem.quantity = Number(existingItem.quantity || 0) + quantity;
+      delete existingItem.id;
+    } else {
+      cart.push(item);
+    }
 
     await redisClient.set(cartKey, JSON.stringify(cart));
 
