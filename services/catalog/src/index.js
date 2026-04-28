@@ -1,7 +1,9 @@
 const express = require("express");
+const { applyCors } = require("../../../shared/cors");
 const { createPool, waitForDatabase } = require("../../../shared/db");
 
 const app = express();
+app.use(applyCors);
 app.use(express.json());
 
 const pool = createPool();

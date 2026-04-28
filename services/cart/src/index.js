@@ -1,8 +1,10 @@
 const express = require("express");
 const { authenticate } = require("../../../shared/authMiddleware");
+const { applyCors } = require("../../../shared/cors");
 const { createRedisConnection, waitForRedis } = require("../../../shared/redis");
 
 const app = express();
+app.use(applyCors);
 app.use(express.json());
 
 const redisClient = createRedisConnection();

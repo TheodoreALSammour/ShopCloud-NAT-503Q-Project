@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ShopCloud Login</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="auth-screen" id="authScreen">
+      <section class="auth-hero" aria-labelledby="authTitle">
+        <a class="brand auth-brand" href="index.html" aria-label="ShopCloud home">
+          <span class="brand-mark">SC</span>
+          <span>
+            <strong>ShopCloud</strong>
+            <small>Micro-commerce</small>
+          </span>
+        </a>
+        <p class="eyebrow">Secure access</p>
+        <h1 id="authTitle">Sign in first, then work only where your role belongs.</h1>
+        <p class="auth-copy">Customers can browse, build a cart, and checkout. Admins go straight to inventory and operations.</p>
+      </section>
+
+      <section class="auth-panel auth-card" aria-label="Account">
+        <div class="panel-heading">
+          <span>Account</span>
+        </div>
+        <div class="auth-toggle" role="tablist" aria-label="Authentication mode">
+          <button class="active" data-auth-mode="login" type="button">Login</button>
+          <button data-auth-mode="register" type="button">Register</button>
+        </div>
+        <form id="authForm" class="stacked-form">
+          <label class="register-only">
+            Name
+            <input name="name" autocomplete="name" placeholder="Theo">
+          </label>
+          <label>
+            Email
+            <input name="email" type="email" autocomplete="email" placeholder="you@shopcloud.test" required>
+          </label>
+          <label>
+            Password
+            <input name="password" type="password" autocomplete="current-password" placeholder="pass123" required>
+          </label>
+          <label class="register-only">
+            Role
+            <select name="role" id="roleSelect">
+              <option value="customer">Customer</option>
+              <option value="admin">Admin</option>
+            </select>
+          </label>
+          <label class="register-only admin-secret-field" id="adminSecretField">
+            Admin secret
+            <input name="adminSecret" type="password" autocomplete="off" placeholder="Required for admin">
+          </label>
+          <button class="primary-button" type="submit" id="authSubmit">Login</button>
+        </form>
+      </section>
+    </main>
+    <section class="notice auth-notice" id="notice" aria-live="polite"></section>
+    <script src="app.js"></script>
+  </body>
+</html>

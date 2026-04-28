@@ -1,9 +1,11 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const { authenticate, signToken } = require("../../../shared/authMiddleware");
+const { applyCors } = require("../../../shared/cors");
 const { createPool, waitForDatabase } = require("../../../shared/db");
 
 const app = express();
+app.use(applyCors);
 app.use(express.json());
 
 const pool = createPool();
@@ -21,12 +23,28 @@ app.get("/health", (req,res)=>{
 });
 
 app.post("/register", async (req, res) => {
-  const { name, email, password, role } = req.body;
+  const { name, email, password, role, adminSecret } = req.body;
 
   if (!name || !email || !password) {
     return res.status(400).json({
       message: "name, email, and password are required"
     });
+  }
+
+  if (role === "admin") {
+    const expectedAdminSecret = process.env.ADMIN_REGISTRATION_SECRET;
+
+    if (!expectedAdminSecret) {
+      return res.status(403).json({
+        message: "Admin registration is not configured"
+      });
+    }
+
+    if (adminSecret !== expectedAdminSecret) {
+      return res.status(403).json({
+        message: "Invalid admin registration secret"
+      });
+    }
   }
 
   try {

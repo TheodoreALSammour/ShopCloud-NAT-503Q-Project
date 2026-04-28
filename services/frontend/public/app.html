@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ShopCloud App</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="app-shell" id="appShell">
+      <aside class="sidebar" aria-label="ShopCloud navigation">
+        <a class="brand" href="app.html" aria-label="ShopCloud home">
+          <span class="brand-mark">SC</span>
+          <span>
+            <strong>ShopCloud</strong>
+            <small>Micro-commerce</small>
+          </span>
+        </a>
+
+        <nav class="nav-tabs" aria-label="Primary">
+          <button class="nav-tab" data-view="store" data-role="customer" type="button">Store</button>
+          <button class="nav-tab" data-view="cart" data-role="customer" type="button">Cart</button>
+          <button class="nav-tab" data-view="admin" data-role="admin" type="button">Admin</button>
+        </nav>
+
+        <section class="session-panel" aria-label="Signed in account">
+          <div class="panel-heading">
+            <button class="ghost-button" id="signOutButton" type="button">Sign out</button>
+          </div>
+          <p class="user-pill" id="userStatus">Guest session</p>
+        </section>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Live service storefront</p>
+            <h1 id="workspaceTitle">Products, carts, checkout, and admin control in one clean flow.</h1>
+          </div>
+          <button class="primary-button compact" id="refreshButton" type="button">Refresh</button>
+        </header>
+
+        <section class="view active" id="storeView" aria-labelledby="storeTitle">
+          <div class="section-title">
+            <div>
+              <p class="eyebrow">Catalog</p>
+              <h2 id="storeTitle">Available products</h2>
+            </div>
+            <div class="metric-strip">
+              <span><strong id="productCount">0</strong> products</span>
+              <span><strong id="stockCount">0</strong> units</span>
+            </div>
+          </div>
+          <div class="product-grid" id="productGrid"></div>
+        </section>
+
+        <section class="view" id="cartView" aria-labelledby="cartTitle">
+          <div class="section-title">
+            <div>
+              <p class="eyebrow">Customer cart</p>
+              <h2 id="cartTitle">Ready for checkout</h2>
+            </div>
+            <button class="ghost-button danger" id="clearCartButton" type="button">Clear cart</button>
+          </div>
+          <div class="cart-layout">
+            <div class="line-items" id="cartItems"></div>
+            <aside class="checkout-panel">
+              <span class="summary-label">Estimated total</span>
+              <strong id="cartTotal">$0.00</strong>
+              <p id="cartHint">Add products, then place an order.</p>
+              <button class="primary-button" id="checkoutButton" type="button">Place order</button>
+              <div class="invoice-box" id="invoiceBox"></div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="view" id="adminView" aria-labelledby="adminTitle">
+          <div class="section-title">
+            <div>
+              <p class="eyebrow">Operations</p>
+              <h2 id="adminTitle">Admin dashboard</h2>
+            </div>
+          </div>
+          <div class="admin-grid">
+            <section class="dashboard-panel">
+              <div class="stats-grid" id="statsGrid"></div>
+              <div class="split-panel">
+                <div>
+                  <h3>Low stock</h3>
+                  <div id="lowStockList" class="mini-list"></div>
+                </div>
+                <div>
+                  <h3>Recent orders</h3>
+                  <div id="recentOrdersList" class="mini-list"></div>
+                </div>
+              </div>
+            </section>
+            <section class="inventory-panel">
+              <div class="panel-heading">
+                <span>Inventory</span>
+                <button class="ghost-button" id="loadAdminButton" type="button">Load admin data</button>
+              </div>
+              <form id="productForm" class="inventory-form">
+                <input name="name" placeholder="Product name" required>
+                <input name="price" type="number" step="0.01" min="0" placeholder="Price" required>
+                <input name="stock" type="number" min="0" step="1" placeholder="Stock" required>
+                <input name="description" placeholder="Description">
+                <button class="primary-button" type="submit">Add product</button>
+              </form>
+              <div class="inventory-list" id="inventoryList"></div>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+    <section class="notice auth-notice" id="notice" aria-live="polite"></section>
+    <script src="app.js"></script>
+  </body>
+</html>
