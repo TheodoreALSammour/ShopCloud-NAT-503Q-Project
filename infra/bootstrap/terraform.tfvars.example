@@ -1,0 +1,2 @@
+project    = "shopcloud-nat"
+aws_region = "us-east-1"

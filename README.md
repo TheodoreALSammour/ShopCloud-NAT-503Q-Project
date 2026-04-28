@@ -161,3 +161,12 @@ Invoke-RestMethod -Method Post -Uri http://localhost:3004/returns -Headers @{ Au
 - `Project Architecture.pdf`: Phase 1 architecture/design report.
 - `Project Spring 2026 (1).pdf`: project requirements document.
 
+## Phase 2 Deployment
+
+Terraform and CI/CD starter files are in `infra/`, `.github/workflows/`, and `docs/rollback.md`.
+
+Start with:
+
+```powershell
+Get-Content infra\README.md
+```
