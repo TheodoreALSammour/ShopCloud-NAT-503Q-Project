@@ -13,6 +13,18 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - region: us-east-1
+            region_name: us
+            tfvars: dev-us.tfvars.json
+            state_key: dev/us/terraform.tfstate
+          - region: eu-central-1
+            region_name: eu
+            tfvars: dev-eu.tfvars.json
+            state_key: dev/eu/terraform.tfstate
 
     permissions:
       contents: read
@@ -26,7 +38,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ matrix.region }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -36,14 +48,14 @@ jobs:
         run: >
           terraform init
           -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}"
-          -backend-config="key=dev/terraform.tfstate"
-          -backend-config="region=${{ secrets.AWS_REGION }}"
+          -backend-config="key=${{ matrix.state_key }}"
+          -backend-config="region=${{ matrix.region }}"
           -backend-config="encrypt=true"
           -backend-config="use_lockfile=true"
 
       - name: Terraform create ECR repositories
         working-directory: infra
-        run: terraform apply -auto-approve -target=aws_ecr_repository.service -var-file="dev.tfvars.json" -var="aws_region=${{ secrets.AWS_REGION }}" -var="image_tag=${{ github.sha }}"
+        run: terraform apply -auto-approve -target=aws_ecr_repository.service -var-file="${{ matrix.tfvars }}" -var="aws_region=${{ matrix.region }}" -var="image_tag=${{ github.sha }}"
 
       - name: Login to ECR
         id: ecr
@@ -53,7 +65,7 @@ jobs:
         shell: bash
         run: |
           ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-          REGION="${{ secrets.AWS_REGION }}"
+          REGION="${{ matrix.region }}"
           REGION_SLUG="${REGION//-/}"
           TAG="${{ github.sha }}"
           for SERVICE in auth catalog cart checkout admin frontend; do
@@ -64,4 +76,4 @@ jobs:
 
       - name: Terraform apply services
         working-directory: infra
-        run: terraform apply -auto-approve -var-file="dev.tfvars.json" -var="aws_region=${{ secrets.AWS_REGION }}" -var="image_tag=${{ github.sha }}"
+        run: terraform apply -auto-approve -var-file="${{ matrix.tfvars }}" -var="aws_region=${{ matrix.region }}" -var="image_tag=${{ github.sha }}"
