@@ -40,7 +40,7 @@ jobs:
 
       - name: Terraform create ECR repositories
         working-directory: infra
-        run: terraform apply -auto-approve -target=aws_ecr_repository.service -var-file="prod.tfvars.json" -var="image_tag=${{ github.sha }}"
+        run: terraform apply -auto-approve -target=aws_ecr_repository.service -var-file="prod.tfvars.json" -var="aws_region=${{ secrets.AWS_REGION }}" -var="image_tag=${{ github.sha }}"
 
       - name: Login to ECR
         id: ecr
@@ -51,13 +51,14 @@ jobs:
         run: |
           ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
           REGION="${{ secrets.AWS_REGION }}"
+          REGION_SLUG="${REGION//-/}"
           TAG="${{ github.sha }}"
-          for SERVICE in auth catalog cart checkout admin; do
-            REPO="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$PROJECT-$ENVIRONMENT-$SERVICE"
+          for SERVICE in auth catalog cart checkout admin frontend; do
+            REPO="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$PROJECT-$ENVIRONMENT-$REGION_SLUG-$SERVICE"
             docker build -t "$REPO:$TAG" -f "services/$SERVICE/Dockerfile" .
             docker push "$REPO:$TAG"
           done
 
       - name: Terraform apply prod
         working-directory: infra
-        run: terraform apply -auto-approve -var-file="prod.tfvars.json" -var="image_tag=${{ github.sha }}"
+        run: terraform apply -auto-approve -var-file="prod.tfvars.json" -var="aws_region=${{ secrets.AWS_REGION }}" -var="image_tag=${{ github.sha }}"

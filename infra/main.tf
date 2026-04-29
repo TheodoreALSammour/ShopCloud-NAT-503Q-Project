@@ -3,7 +3,8 @@ data "aws_availability_zones" "available" {
 }
 
 locals {
-  name = "${var.project}-${var.environment}"
+  region_slug = replace(var.aws_region, "-", "")
+  name        = "${var.project}-${var.environment}-${local.region_slug}"
 
   services = {
     auth = {
@@ -41,6 +42,13 @@ locals {
       public      = false
       paths       = ["/*"]
     }
+    frontend = {
+      port        = 5173
+      dockerfile  = "services/frontend/Dockerfile"
+      health_path = "/health"
+      public      = true
+      paths       = ["/*"]
+    }
   }
 
   public_services = {
@@ -54,18 +62,25 @@ locals {
   common_tags = {
     Project     = var.project
     Environment = var.environment
+    Region      = var.aws_region
     ManagedBy   = "terraform"
   }
 }
 
 resource "random_password" "db_password" {
-  length  = 24
-  special = true
+  length           = 24
+  special          = true
+  override_special = "!#$%&*()-_=+[]{}<>:?"
 }
 
 resource "random_password" "jwt_secret" {
   length  = 32
   special = true
+}
+
+resource "random_password" "admin_registration_secret" {
+  length  = 20
+  special = false
 }
 
 resource "aws_vpc" "main" {
@@ -223,7 +238,7 @@ resource "aws_security_group" "ecs" {
 
   ingress {
     from_port       = 3000
-    to_port         = 3004
+    to_port         = 5173
     protocol        = "tcp"
     security_groups = [aws_security_group.public_alb.id, aws_security_group.internal_alb.id]
   }
@@ -361,6 +376,18 @@ resource "aws_secretsmanager_secret_version" "jwt_secret" {
   secret_string = random_password.jwt_secret.result
 }
 
+resource "aws_secretsmanager_secret" "admin_registration_secret" {
+  name                    = "${local.name}/admin/registration-secret"
+  recovery_window_in_days = var.environment == "prod" ? 30 : 0
+
+  tags = local.common_tags
+}
+
+resource "aws_secretsmanager_secret_version" "admin_registration_secret" {
+  secret_id     = aws_secretsmanager_secret.admin_registration_secret.id
+  secret_string = random_password.admin_registration_secret.result
+}
+
 resource "aws_iam_role" "ecs_task_execution" {
   name = "${local.name}-ecs-execution"
 
@@ -396,7 +423,8 @@ resource "aws_iam_role_policy" "ecs_secrets" {
       ]
       Resource = [
         aws_secretsmanager_secret.db_password.arn,
-        aws_secretsmanager_secret.jwt_secret.arn
+        aws_secretsmanager_secret.jwt_secret.arn,
+        aws_secretsmanager_secret.admin_registration_secret.arn
       ]
     }]
   })
@@ -538,12 +566,20 @@ resource "aws_ecs_task_definition" "service" {
         { name = "CATALOG_PORT", value = "3001" },
         { name = "CART_PORT", value = "3002" },
         { name = "CHECKOUT_PORT", value = "3003" },
-        { name = "ADMIN_PORT", value = "3004" }
+        { name = "ADMIN_PORT", value = "3004" },
+        { name = "FRONTEND_PORT", value = "5173" },
+        { name = "FRONTEND_ORIGIN", value = "http://${aws_lb.public.dns_name}" },
+        { name = "AUTH_API_BASE_URL", value = "http://${aws_lb.public.dns_name}" },
+        { name = "CATALOG_API_BASE_URL", value = "http://${aws_lb.public.dns_name}" },
+        { name = "CART_API_BASE_URL", value = "http://${aws_lb.public.dns_name}" },
+        { name = "CHECKOUT_API_BASE_URL", value = "http://${aws_lb.public.dns_name}" },
+        { name = "ADMIN_API_BASE_URL", value = "http://${aws_lb.internal.dns_name}" }
       ]
 
       secrets = [
         { name = "POSTGRES_PASSWORD", valueFrom = aws_secretsmanager_secret.db_password.arn },
-        { name = "JWT_SECRET", valueFrom = aws_secretsmanager_secret.jwt_secret.arn }
+        { name = "JWT_SECRET", valueFrom = aws_secretsmanager_secret.jwt_secret.arn },
+        { name = "ADMIN_REGISTRATION_SECRET", valueFrom = aws_secretsmanager_secret.admin_registration_secret.arn }
       ]
 
       logConfiguration = {
@@ -589,4 +625,3 @@ resource "aws_ecs_service" "service" {
 
   tags = local.common_tags
 }
-

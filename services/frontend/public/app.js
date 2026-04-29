@@ -1,9 +1,9 @@
 const endpoints = {
-  auth: "http://localhost:3000",
-  catalog: "http://localhost:3001",
-  cart: "http://localhost:3002",
-  checkout: "http://localhost:3003",
-  admin: "http://localhost:3004"
+  auth: location.hostname === "localhost" ? "http://localhost:3000" : "/api/auth",
+  catalog: location.hostname === "localhost" ? "http://localhost:3001" : "/api/catalog",
+  cart: location.hostname === "localhost" ? "http://localhost:3002" : "/api/cart",
+  checkout: location.hostname === "localhost" ? "http://localhost:3003" : "/api/checkout",
+  admin: location.hostname === "localhost" ? "http://localhost:3004" : "/api/admin"
 };
 
 const isLoginPage = Boolean(document.querySelector("#authForm"));

@@ -20,3 +20,7 @@ output "ecs_cluster_name" {
   value       = aws_ecs_cluster.main.name
 }
 
+output "admin_registration_secret_name" {
+  description = "Secrets Manager name containing the admin registration secret."
+  value       = aws_secretsmanager_secret.admin_registration_secret.name
+}

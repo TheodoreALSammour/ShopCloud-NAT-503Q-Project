@@ -11,6 +11,7 @@ ShopCloud is a lightweight e-commerce backend built as a set of Node.js microser
 | Cart | 3002 | Redis-backed customer shopping cart |
 | Checkout | 3003 | Order placement, stock updates, async invoice generation |
 | Admin | 3004 | Admin dashboard, inventory updates, return processing |
+| Frontend | 5173 | Browser UI and same-origin API proxy for deployed demo |
 | PostgreSQL | 5432 | Users, products, orders, invoices, returns |
 | Redis | 6379 | Cart persistence |
 
@@ -42,6 +43,7 @@ curl.exe http://localhost:3001/health
 curl.exe http://localhost:3002/health
 curl.exe http://localhost:3003/health
 curl.exe http://localhost:3004/health
+curl.exe http://localhost:5173/health
 ```
 
 Each service should return a JSON response with `status` set to `ok`.
