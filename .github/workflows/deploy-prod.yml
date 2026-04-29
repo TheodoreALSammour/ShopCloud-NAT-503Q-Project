@@ -6,6 +6,7 @@ on:
 env:
   ENVIRONMENT: prod
   PROJECT: shopcloud
+  TF_STATE_BUCKET_REGION: us-east-1
 
 jobs:
   deploy:
@@ -46,7 +47,7 @@ jobs:
           terraform init
           -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}"
           -backend-config="key=${{ matrix.state_key }}"
-          -backend-config="region=${{ matrix.region }}"
+          -backend-config="region=${{ env.TF_STATE_BUCKET_REGION }}"
           -backend-config="encrypt=true"
           -backend-config="use_lockfile=true"
 
