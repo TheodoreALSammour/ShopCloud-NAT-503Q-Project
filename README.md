@@ -109,6 +109,34 @@ Invoke-WebRequest -Uri "http://localhost:3003/orders/$orderId/invoice.pdf" -Head
 
 ## Admin Demo Flow
 
+For local Docker, the admin registration secret is the value in `.env`:
+
+```powershell
+NAT-shopcloud
+```
+
+For AWS deployments, Terraform generates a different admin registration secret for each region. Retrieve the matching secret before creating an admin account.
+
+US deployment:
+
+```powershell
+aws secretsmanager get-secret-value `
+  --secret-id shopcloud-dev-useast1/admin/registration-secret `
+  --region us-east-1 `
+  --query SecretString `
+  --output text
+```
+
+Europe deployment:
+
+```powershell
+aws secretsmanager get-secret-value `
+  --secret-id shopcloud-dev-eucentral1/admin/registration-secret `
+  --region eu-central-1 `
+  --query SecretString `
+  --output text
+```
+
 Register an admin:
 
 ```powershell
