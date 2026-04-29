@@ -4,12 +4,15 @@ const serviceRequire = createRequire(`${process.cwd()}/`);
 const { Pool } = serviceRequire("pg");
 
 function createPool() {
+  const useSsl = String(process.env.POSTGRES_SSL || "").toLowerCase() === "true";
+
   return new Pool({
     user: process.env.POSTGRES_USER || "shopcloud",
     host: process.env.POSTGRES_HOST || "postgres",
     database: process.env.POSTGRES_DB || "shopcloud",
     password: process.env.POSTGRES_PASSWORD || "shopcloud123",
-    port: Number(process.env.POSTGRES_PORT || 5432)
+    port: Number(process.env.POSTGRES_PORT || 5432),
+    ssl: useSsl ? { rejectUnauthorized: false } : false
   });
 }
 

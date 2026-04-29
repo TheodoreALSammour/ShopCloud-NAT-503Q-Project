@@ -442,7 +442,7 @@ resource "aws_ecs_cluster" "main" {
 }
 
 resource "aws_lb" "public" {
-  name               = "${local.name}-public"
+  name               = "${local.name}-pub"
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.public_alb.id]
@@ -454,7 +454,7 @@ resource "aws_lb" "public" {
 }
 
 resource "aws_lb" "internal" {
-  name               = "${local.name}-internal"
+  name               = "${local.name}-int"
   internal           = true
   load_balancer_type = "application"
   security_groups    = [aws_security_group.internal_alb.id]
@@ -560,6 +560,7 @@ resource "aws_ecs_task_definition" "service" {
         { name = "POSTGRES_DB", value = var.db_name },
         { name = "POSTGRES_HOST", value = aws_db_instance.postgres.address },
         { name = "POSTGRES_PORT", value = "5432" },
+        { name = "POSTGRES_SSL", value = "true" },
         { name = "REDIS_HOST", value = aws_elasticache_cluster.redis.cache_nodes[0].address },
         { name = "REDIS_PORT", value = "6379" },
         { name = "AUTH_PORT", value = "3000" },
